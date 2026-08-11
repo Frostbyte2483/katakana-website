@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Katakana Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EDE8DC;
+    --paper-raised:#F6F3EA;
+    --ink:#221F1B;
+    --ink-soft:#5A554C;
+    --indigo:#2C4059;
+    --indigo-soft:#5C7089;
+    --vermilion:#B23A2C;
+    --gold:#B08D57;
+    --line: rgba(34,31,27,0.14);
+    --line-strong: rgba(34,31,27,0.28);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:920px;
+    margin:0 auto;
+    padding:40px 24px 80px;
+  }
+  .masthead{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:18px;
+    margin-bottom:28px;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .masthead h1{
+    font-family:'Shippori Mincho', serif;
+    font-weight:800;
+    font-size:34px;
+    margin:0;
+    letter-spacing:0.02em;
+  }
+  .masthead h1 span{
+    color:var(--vermilion);
+  }
+  .masthead p{
+    margin:4px 0 0;
+    font-size:13px;
+    color:var(--ink-soft);
+    letter-spacing:0.04em;
+  }
+  .stamp{
+    font-family:'Shippori Mincho', serif;
+    font-weight:600;
+    font-size:13px;
+    color:var(--vermilion);
+    border:1.5px solid var(--vermilion);
+    border-radius:3px;
+    padding:6px 12px;
+    white-space:nowrap;
+  }
+
+  .tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:24px;
+  }
+  .tab{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:14px;
+    font-weight:700;
+    padding:10px 20px;
+    background:transparent;
+    border:1.5px solid var(--line-strong);
+    border-radius:20px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all 0.15s ease;
+  }
+  .tab.active{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:var(--paper);
+  }
+  .tab:hover:not(.active){
+    border-color:var(--ink);
+    color:var(--ink);
+  }
+  .tab:focus-visible, .chip:focus-visible, .opt-btn:focus-visible, .card:focus-visible, .next-btn:focus-visible, .restart-btn:focus-visible{
+    outline:2px solid var(--indigo);
+    outline-offset:2px;
+  }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  /* filter row */
+  .filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:20px;
+  }
+  .chip{
+    font-size:12px;
+    font-weight:700;
+    padding:6px 12px;
+    border-radius:14px;
+    border:1px solid var(--line-strong);
+    background:var(--paper-raised);
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .chip.active{
+    background:var(--indigo);
+    border-color:var(--indigo);
+    color:var(--paper);
+  }
+
+  /* grid of cards */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(140px,1fr));
+    gap:10px;
+  }
+  .card{
+    position:relative;
+    aspect-ratio:1/1;
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:6px;
+    cursor:pointer;
+    perspective:600px;
+  }
+  .card-inner{
+    position:relative;
+    width:100%;
+    height:100%;
+    transition:transform 0.45s cubic-bezier(.4,.2,.2,1);
+    transform-style:preserve-3d;
+  }
+  .card.flipped .card-inner{ transform:rotateY(180deg); }
+  .face{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    padding:8px;
+    text-align:center;
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .face-front{
+    background:var(--paper-raised);
+  }
+  .face-front .char{
+    font-family:'Shippori Mincho', serif;
+    font-weight:600;
+    font-size:44px;
+    color:var(--ink);
+  }
+  .face-front .romaji-hint{
+    font-size:10px;
+    color:var(--ink-soft);
+    margin-top:4px;
+    letter-spacing:0.08em;
+    opacity:0.55;
+  }
+  .face-back{
+    background:var(--indigo);
+    color:var(--paper);
+    transform:rotateY(180deg);
+    overflow-y:auto;
+    scrollbar-width:thin;
+  }
+  .face-back .romaji{
+    font-family:'Shippori Mincho', serif;
+    font-weight:600;
+    font-size:22px;
+    margin-bottom:5px;
+    flex-shrink:0;
+  }
+  .face-back .mnemonic{
+    font-size:10.5px;
+    line-height:1.4;
+    color:rgba(237,232,220,0.88);
+  }
+
+  .section-label{
+    font-family:'Shippori Mincho', serif;
+    font-size:15px;
+    font-weight:600;
+    color:var(--indigo);
+    margin:26px 0 10px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+
+  /* quiz */
+  .quiz-box{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:36px 24px;
+    text-align:center;
+    max-width:520px;
+    margin:0 auto;
+  }
+  .quiz-stats{
+    display:flex;
+    justify-content:center;
+    gap:28px;
+    margin-bottom:22px;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .quiz-stats b{
+    color:var(--ink);
+    font-size:16px;
+    display:block;
+    font-family:'Shippori Mincho', serif;
+  }
+  .quiz-char{
+    font-family:'Shippori Mincho', serif;
+    font-weight:800;
+    font-size:88px;
+    line-height:1;
+    margin:12px 0 28px;
+    color:var(--ink);
+  }
+  .quiz-options{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-bottom:8px;
+  }
+  .opt-btn{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:16px;
+    font-weight:700;
+    padding:14px;
+    background:var(--paper);
+    border:1.5px solid var(--line-strong);
+    border-radius:8px;
+    cursor:pointer;
+    color:var(--ink);
+    transition:all 0.12s ease;
+  }
+  .opt-btn:hover:not(:disabled){ border-color:var(--indigo); }
+  .opt-btn.correct{
+    background:#3B6D11;
+    border-color:#3B6D11;
+    color:#EAF3DE;
+  }
+  .opt-btn.wrong{
+    background:var(--vermilion);
+    border-color:var(--vermilion);
+    color:#FAECE7;
+  }
+  .opt-btn:disabled{ cursor:default; opacity:1; }
+  .quiz-feedback{
+    min-height:20px;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    margin-top:14px;
+  }
+  .next-btn{
+    margin-top:14px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    padding:10px 22px;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    border-radius:20px;
+    cursor:pointer;
+    display:none;
+  }
+  .restart-btn{
+    margin-top:18px;
+    font-size:12px;
+    color:var(--ink-soft);
+    background:none;
+    border:none;
+    text-decoration:underline;
+    cursor:pointer;
+  }
+
+  footer{
+    margin-top:36px;
+    padding-top:14px;
+    border-top:1px solid var(--line);
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+
+  @media (max-width:520px){
+    .masthead h1{ font-size:26px; }
+    .quiz-char{ font-size:64px; }
+    .face-front .char{ font-size:34px; }
+    .grid{ grid-template-columns:repeat(auto-fill, minmax(110px,1fr)); }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card-inner{ transition:none; }
+    .tab, .opt-btn{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="masthead">
+    <div>
+      <h1>カタカナ<span>·</span>Trainer</h1>
+      <p>71 KATAKANA — BASE, DAKUTEN & HANDAKUTEN</p>
+    </div>
+    <div class="stamp">研究</div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="study" role="tab" aria-selected="true">Study cards</button>
+    <button class="tab" data-tab="quiz" role="tab" aria-selected="false">Quiz</button>
+  </div>
+
+  <!-- STUDY PANEL -->
+  <div class="panel active" id="panel-study">
+    <div class="filters" id="filters"></div>
+    <div id="grid-container"></div>
+  </div>
+
+  <!-- QUIZ PANEL -->
+  <div class="panel" id="panel-quiz">
+    <div class="quiz-box">
+      <div class="quiz-stats">
+        <div><b id="q-score">0</b>score</div>
+        <div><b id="q-streak">0</b>streak</div>
+        <div><b id="q-count">0/0</b>seen</div>
+      </div>
+      <div class="quiz-char" id="q-char">ア</div>
+      <div class="quiz-options" id="q-options"></div>
+      <div class="quiz-feedback" id="q-feedback" aria-live="polite"></div>
+      <button class="next-btn" id="q-next">Next →</button>
+      <br>
+      <button class="restart-btn" id="q-restart">restart quiz</button>
+    </div>
+  </div>
+
+  <footer>Click any card to flip it. Mnemonics are memory hooks, not etymology.</footer>
+</div>
+
+<script>
+const DATA = [
+ {c:"ア",r:"a",row:"vowels",m:"Looks like an archer's bow mid-draw — 'a' for arrow."},
+ {c:"イ",r:"i",row:"vowels",m:"Two simple strokes standing like a stick figure — 'i' for me."},
+ {c:"ウ",r:"u",row:"vowels",m:"A roof over a dot, like a little house — 'u' for umbrella hut."},
+ {c:"エ",r:"e",row:"vowels",m:"A tipped-over capital E — like an elevator shaft."},
+ {c:"オ",r:"o",row:"vowels",m:"A cross with a flick, like an axe over your shoulder."},
+ {c:"カ",r:"ka",row:"k",m:"Looks like a sickle or karate chop mid-swing."},
+ {c:"キ",r:"ki",row:"k",m:"Looks like an old-fashioned key."},
+ {c:"ク",r:"ku",row:"k",m:"A sharp beak, like a crow's — 'ku' for crow."},
+ {c:"ケ",r:"ke",row:"k",m:"A small kettle with steam curling off it."},
+ {c:"コ",r:"ko",row:"k",m:"Two flat brackets, like an open cardboard box."},
+ {c:"ガ",r:"ga",row:"g",m:"Same hook as カ, but the two tick marks turn the sharp sound into a growl — 'ga'."},
+ {c:"ギ",r:"gi",row:"g",m:"Same key shape as キ, buzzing in the lock — 'gi'."},
+ {c:"グ",r:"gu",row:"g",m:"Same beak as ク, now cawing deeper — a growling crow, 'gu'."},
+ {c:"ゲ",r:"ge",row:"g",m:"Same kettle as ケ, now hissing louder — a rumbling 'ge'."},
+ {c:"ゴ",r:"go",row:"g",m:"Same box as コ, stamped with a buzz mark — a solid 'go'."},
+ {c:"サ",r:"sa",row:"s",m:"Looks like a trident or fork sticking up."},
+ {c:"シ",r:"shi",row:"s",m:"Three short strokes like a smiley's eyes and mouth curling."},
+ {c:"ス",r:"su",row:"s",m:"A single swooping stroke, like a swan's neck."},
+ {c:"セ",r:"se",row:"s",m:"Looks like a zigzag zipper being pulled."},
+ {c:"ソ",r:"so",row:"s",m:"Two strokes falling apart, like socks slipping down."},
+ {c:"ザ",r:"za",row:"z",m:"Same trident as サ, now buzzing like static — 'za'."},
+ {c:"ジ",r:"ji",row:"z",m:"Same curling strokes as シ, softened into a voiced 'ji'."},
+ {c:"ズ",r:"zu",row:"z",m:"Same swan neck as ス, now humming a low 'zu'."},
+ {c:"ゼ",r:"ze",row:"z",m:"Same zigzag zipper as セ, now buzzing shut — 'ze'."},
+ {c:"ゾ",r:"zo",row:"z",m:"Same falling socks as ソ, weighed down into a heavy 'zo'."},
+ {c:"タ",r:"ta",row:"t",m:"Looks like a leg mid-tap-dance step."},
+ {c:"チ",r:"chi",row:"t",m:"Looks like the number 7 with a hook — like a cheerio."},
+ {c:"ツ",r:"tsu",row:"t",m:"Three small waves, like a tsunami cresting."},
+ {c:"テ",r:"te",row:"t",m:"Looks like a table with an antenna sticking up."},
+ {c:"ト",r:"to",row:"t",m:"Looks like a signpost pointing a toe."},
+ {c:"ダ",r:"da",row:"d",m:"Same tap-dance leg as タ, stomping harder — 'da'."},
+ {c:"ヂ",r:"ji",row:"d",m:"Same hooked 7 as チ, voiced into a soft 'ji' — rare, mostly in compound words."},
+ {c:"ヅ",r:"zu",row:"d",m:"Same tsunami waves as ツ, now a deep rolling 'zu' — rare, mostly in compounds."},
+ {c:"デ",r:"de",row:"d",m:"Same antenna table as テ, buzzing with signal — 'de'."},
+ {c:"ド",r:"do",row:"d",m:"Same signpost as ト, now planted firmly — a heavy 'do'."},
+ {c:"ナ",r:"na",row:"n",m:"A cross shape, like two nails hammered together."},
+ {c:"ニ",r:"ni",row:"n",m:"Two flat strokes, like knees bent — 'ni' rhymes with knee."},
+ {c:"ヌ",r:"nu",row:"n",m:"Looks like noodles twirled around chopsticks."},
+ {c:"ネ",r:"ne",row:"n",m:"Looks like a cat curled up in its nest."},
+ {c:"ノ",r:"no",row:"n",m:"A single downward slash, like crossing something off — 'no'."},
+ {c:"ハ",r:"ha",row:"h",m:"Looks like Mount Fuji, or a mouth open laughing 'ha!'"},
+ {c:"ヒ",r:"hi",row:"h",m:"Looks like a person smiling — 'hee hee'."},
+ {c:"フ",r:"fu",row:"h",m:"A single hooked stroke, like Mount Fuji's silhouette."},
+ {c:"ヘ",r:"he",row:"h",m:"A small peak or hat brim — like saying 'heh'."},
+ {c:"ホ",r:"ho",row:"h",m:"Looks like a house with a pole and roof — 'home'."},
+ {c:"バ",r:"ba",row:"b",m:"Same Fuji peak as ハ, now booming — 'ba'."},
+ {c:"ビ",r:"bi",row:"b",m:"Same smiling face as ヒ, now buzzing — 'bi'."},
+ {c:"ブ",r:"bu",row:"b",m:"Same hooked stroke as フ, now humming low — 'bu'."},
+ {c:"ベ",r:"be",row:"b",m:"Same hat brim as ヘ, now buzzing — 'be'."},
+ {c:"ボ",r:"bo",row:"b",m:"Same house as ホ, now with a booming doorbell — 'bo'."},
+ {c:"パ",r:"pa",row:"p",m:"Same Fuji peak as ハ, topped with a tiny circle — a light popping 'pa'."},
+ {c:"ピ",r:"pi",row:"p",m:"Same smiling face as ヒ, with a little circle earring — a bright 'pi'."},
+ {c:"プ",r:"pu",row:"p",m:"Same hooked stroke as フ, with a little puff of air — 'pu'."},
+ {c:"ペ",r:"pe",row:"p",m:"Same hat brim as ヘ, with a little pom-pom — a peppy 'pe'."},
+ {c:"ポ",r:"po",row:"p",m:"Same house as ホ, with a round doorknob — a bouncy 'po'."},
+ {c:"マ",r:"ma",row:"m",m:"Looks like a mother's hand reaching with a hook."},
+ {c:"ミ",r:"mi",row:"m",m:"Three short strokes — easy to count, 'mi' has 3 lines."},
+ {c:"ム",r:"mu",row:"m",m:"Looks like a cow's face mid-'moo'."},
+ {c:"メ",r:"me",row:"m",m:"An X shape, like a squinting eye — 'me' means eye in Japanese."},
+ {c:"モ",r:"mo",row:"m",m:"Looks like a fishing hook pulling up a mole from soil."},
+ {c:"ヤ",r:"ya",row:"y",m:"Looks like a slingshot mid-launch — 'yeah!'"},
+ {c:"ユ",r:"yu",row:"y",m:"A hook shape, like a U-turn sign."},
+ {c:"ヨ",r:"yo",row:"y",m:"Looks like a backwards E, or a shelf with three slats."},
+ {c:"ラ",r:"ra",row:"r",m:"Looks like a rabbit's ear flopping over."},
+ {c:"リ",r:"ri",row:"r",m:"Two straight strokes, like chopsticks side by side."},
+ {c:"ル",r:"ru",row:"r",m:"A hook with a loop, like a rolling wheel."},
+ {c:"レ",r:"re",row:"r",m:"A single check-mark stroke, like a receipt tick."},
+ {c:"ロ",r:"ro",row:"r",m:"A plain square, like a box or a road sign."},
+ {c:"ワ",r:"wa",row:"w/n",m:"Looks like a person bent at the waist bowing — 'wa'."},
+ {c:"ヲ",r:"wo",row:"w/n",m:"Rare particle-only character — a wrapped scarf shape."},
+ {c:"ン",r:"n",row:"w/n",m:"A single hooked stroke, easy to mix up with ソ and ツ."}
+];
+
+const ROWS = ["all","vowels","k","g","s","z","t","d","n","h","b","p","m","y","r","w/n"];
+const ROW_LABELS = {all:"All",vowels:"Vowels",k:"K row","g":"G row","s":"S row","z":"Z row",t:"T row","d":"D row",n:"N row",h:"H row","b":"B row","p":"P row",m:"M row",y:"Y row",r:"R row","w/n":"W / N"};
+
+let currentFilter = "all";
+
+function renderFilters(){
+  const el = document.getElementById("filters");
+  el.innerHTML = "";
+  ROWS.forEach(row=>{
+    const b = document.createElement("button");
+    b.className = "chip" + (row===currentFilter ? " active" : "");
+    b.textContent = ROW_LABELS[row];
+    b.setAttribute("aria-pressed", row===currentFilter ? "true" : "false");
+    b.onclick = ()=>{ currentFilter = row; renderFilters(); renderGrid(); };
+    el.appendChild(b);
+  });
+}
+
+function renderGrid(){
+  const container = document.getElementById("grid-container");
+  container.innerHTML = "";
+  const items = currentFilter==="all" ? DATA : DATA.filter(d=>d.row===currentFilter);
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  items.forEach(item=>{
+    const card = document.createElement("div");
+    card.className = "card";
+    card.setAttribute("tabindex","0");
+    card.setAttribute("role","button");
+    card.setAttribute("aria-label", "Flip card for " + item.c);
+    card.innerHTML = `
+      <div class="card-inner">
+        <div class="face face-front">
+          <div class="char">${item.c}</div>
+          <div class="romaji-hint">tap to reveal</div>
+        </div>
+        <div class="face face-back">
+          <div class="romaji">${item.r}</div>
+          <div class="mnemonic">${item.m}</div>
+        </div>
+      </div>`;
+    const flip = ()=> card.classList.toggle("flipped");
+    card.onclick = flip;
+    card.onkeydown = (e)=>{
+      if(e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        flip();
+      }
+    };
+    grid.appendChild(card);
+  });
+  container.appendChild(grid);
+}
+
+// tabs
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.onclick = ()=>{
+    document.querySelectorAll(".tab").forEach(t=>{
+      t.classList.remove("active");
+      t.setAttribute("aria-selected","false");
+    });
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    tab.classList.add("active");
+    tab.setAttribute("aria-selected","true");
+    document.getElementById("panel-"+tab.dataset.tab).classList.add("active");
+    if(tab.dataset.tab==="quiz") initQuiz();
+  };
+});
+
+renderFilters();
+renderGrid();
+
+// ---- QUIZ LOGIC ----
+let quizPool = [];
+let quizIdx = 0;
+let score = 0;
+let streak = 0;
+let answered = false;
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function initQuiz(){
+  quizPool = shuffle(DATA);
+  quizIdx = 0;
+  score = 0;
+  streak = 0;
+  updateStats();
+  loadQuestion();
+}
+
+function updateStats(){
+  document.getElementById("q-score").textContent = score;
+  document.getElementById("q-streak").textContent = streak;
+  document.getElementById("q-count").textContent = Math.min(quizIdx,DATA.length) + "/" + DATA.length;
+}
+
+function loadQuestion(){
+  answered = false;
+  document.getElementById("q-next").style.display = "none";
+  document.getElementById("q-feedback").textContent = "";
+  if(quizIdx >= quizPool.length){
+    document.getElementById("q-char").textContent = "🎉";
+    document.getElementById("q-options").innerHTML = "";
+    document.getElementById("q-feedback").textContent = "Quiz complete — final score " + score + "/" + DATA.length + ". Tap restart to go again.";
+    return;
+  }
+  const item = quizPool[quizIdx];
+  document.getElementById("q-char").textContent = item.c;
+
+  const wrongPool = DATA.filter(d=>d.r !== item.r);
+  const wrongs = shuffle(wrongPool).slice(0,3).map(d=>d.r);
+  const options = shuffle([item.r, ...wrongs]);
+
+  const optDiv = document.getElementById("q-options");
+  optDiv.innerHTML = "";
+  options.forEach(opt=>{
+    const b = document.createElement("button");
+    b.className = "opt-btn";
+    b.textContent = opt;
+    b.onclick = ()=> selectAnswer(b, opt, item.r);
+    optDiv.appendChild(b);
+  });
+  updateStats();
+}
+
+function selectAnswer(btn, chosen, correct){
+  if(answered) return;
+  answered = true;
+  const buttons = document.querySelectorAll(".opt-btn");
+  buttons.forEach(b=>{
+    b.disabled = true;
+    if(b.textContent === correct) b.classList.add("correct");
+  });
+  if(chosen === correct){
+    score++;
+    streak++;
+    document.getElementById("q-feedback").textContent = "Correct.";
+  } else {
+    btn.classList.add("wrong");
+    streak = 0;
+    document.getElementById("q-feedback").textContent = "Not quite — correct answer highlighted.";
+  }
+  quizIdx++;
+  updateStats();
+  document.getElementById("q-next").style.display = "inline-block";
+}
+
+document.getElementById("q-next").onclick = loadQuestion;
+document.getElementById("q-restart").onclick = initQuiz;
+</script>
+</body>
+</html>
