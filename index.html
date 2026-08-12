@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Katakana Trainer</title>
+<title>Katakana Trainer — Study & Quiz All 71 Characters</title>
+<meta name="description" content="Learn all 71 katakana characters — base, dakuten, and handakuten — with flip cards, mnemonics, and a customizable timed quiz.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%232C4059'/%3E%3Ctext x='50' y='72' font-size='62' text-anchor='middle' fill='%23EDE8DC' font-family='Georgia,serif'%3Eカ%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
@@ -20,6 +22,18 @@
     --line: rgba(34,31,27,0.14);
     --line-strong: rgba(34,31,27,0.28);
   }
+  :root[data-theme="dark"]{
+    --paper:#1B1917;
+    --paper-raised:#242220;
+    --ink:#EDE8DC;
+    --ink-soft:#B5AFA2;
+    --indigo:#8CA3C4;
+    --indigo-soft:#6C84A6;
+    --vermilion:#E2604C;
+    --gold:#D4B172;
+    --line: rgba(237,232,220,0.14);
+    --line-strong: rgba(237,232,220,0.28);
+  }
   *{box-sizing:border-box;}
   body{
     margin:0;
@@ -27,6 +41,7 @@
     color:var(--ink);
     font-family:'Zen Kaku Gothic New', sans-serif;
     -webkit-font-smoothing:antialiased;
+    transition:background-color 0.2s ease, color 0.2s ease;
   }
   .wrap{
     max-width:920px;
@@ -69,6 +84,51 @@
     padding:6px 12px;
     white-space:nowrap;
   }
+  .masthead-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .theme-toggle{
+    font-size:16px;
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    border:1.5px solid var(--line-strong);
+    background:var(--paper-raised);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--ink);
+    padding:0;
+  }
+  .theme-toggle:hover{ border-color:var(--ink); }
+
+  .script-toggle{
+    display:flex;
+    gap:8px;
+    margin-bottom:20px;
+  }
+  .script-btn{
+    flex:1;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:13px;
+    font-weight:700;
+    padding:10px;
+    border:1.5px solid var(--line-strong);
+    border-radius:8px;
+    background:var(--paper-raised);
+    color:var(--ink-soft);
+    cursor:pointer;
+    text-align:center;
+  }
+  .script-btn.active{
+    background:var(--indigo);
+    border-color:var(--indigo);
+    color:var(--paper);
+  }
+  .script-btn:hover:not(.active){ border-color:var(--ink); }
 
   .tabs{
     display:flex;
@@ -96,7 +156,7 @@
     border-color:var(--ink);
     color:var(--ink);
   }
-  .tab:focus-visible, .chip:focus-visible, .opt-btn:focus-visible, .card:focus-visible, .next-btn:focus-visible, .restart-btn:focus-visible{
+  .tab:focus-visible, .chip:focus-visible, .opt-btn:focus-visible, .card:focus-visible, .next-btn:focus-visible, .restart-btn:focus-visible, .theme-toggle:focus-visible, .mark-known-btn:focus-visible{
     outline:2px solid var(--indigo);
     outline-offset:2px;
   }
@@ -198,6 +258,54 @@
     font-size:10.5px;
     line-height:1.4;
     color:rgba(237,232,220,0.88);
+  }
+  .mark-known-btn{
+    margin-top:8px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:9.5px;
+    font-weight:700;
+    padding:4px 9px;
+    border-radius:10px;
+    border:1px solid rgba(237,232,220,0.5);
+    background:transparent;
+    color:var(--paper);
+    cursor:pointer;
+    letter-spacing:0.03em;
+    flex-shrink:0;
+  }
+  .mark-known-btn[aria-pressed="true"]{
+    background:var(--gold);
+    border-color:var(--gold);
+    color:var(--ink);
+  }
+  .card.known{ box-shadow: inset 0 0 0 2px var(--gold); }
+
+  .study-toggle-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-bottom:14px;
+  }
+
+  .progress-block{ margin-bottom:16px; }
+  .progress-label{
+    font-size:12px;
+    color:var(--ink-soft);
+    font-weight:700;
+    margin-bottom:6px;
+  }
+  .progress-track{
+    width:100%;
+    height:8px;
+    background:var(--line);
+    border-radius:4px;
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    background:var(--gold);
+    width:0%;
+    transition:width 0.3s ease;
   }
 
   .section-label{
@@ -301,6 +409,202 @@
     cursor:pointer;
   }
 
+  /* quiz setup screen */
+  .setup-block{
+    text-align:left;
+    margin-bottom:22px;
+  }
+  .setup-block .section-label{
+    margin-top:0;
+  }
+  .setup-count{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .setup-count input[type=number]{
+    width:84px;
+    padding:9px 10px;
+    border:1.5px solid var(--line-strong);
+    border-radius:6px;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:14px;
+  }
+  .setup-count input[type=number]:focus-visible{
+    outline:2px solid var(--indigo);
+    outline-offset:2px;
+  }
+  .setup-count input:disabled{ opacity:0.4; }
+  .setup-hint{
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+  .timer-toggle{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-size:13px;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .timer-toggle input[type=checkbox]{
+    width:16px;
+    height:16px;
+    accent-color:var(--indigo);
+    cursor:pointer;
+  }
+
+  .kbd-hint{
+    font-size:11px;
+    color:var(--ink-soft);
+    opacity:0.75;
+    margin:6px 0 0;
+  }
+
+  .timer-bar-wrap{
+    width:100%;
+    height:6px;
+    background:var(--line);
+    border-radius:3px;
+    overflow:hidden;
+    margin-bottom:14px;
+  }
+  .timer-bar{
+    height:100%;
+    background:var(--indigo);
+    width:100%;
+    transition:width 0.1s linear, background-color 0.2s ease;
+  }
+  .timer-bar.low{ background:var(--vermilion); }
+  .start-btn{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    padding:12px 28px;
+    background:var(--indigo);
+    color:var(--paper);
+    border:none;
+    border-radius:24px;
+    cursor:pointer;
+  }
+  .start-btn:hover{ background:var(--indigo-soft); }
+
+  /* history / best score on setup screen */
+  .best-score-line{
+    font-size:13px;
+    color:var(--ink);
+    font-weight:700;
+  }
+  .history-list{ margin-top:8px; }
+  .history-item{
+    font-size:11.5px;
+    color:var(--ink-soft);
+    padding:5px 0;
+    border-bottom:1px dashed var(--line);
+  }
+  .history-item:last-child{ border-bottom:none; }
+  .history-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    margin:0 0 10px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .history-header .section-label{
+    margin:0;
+    padding-bottom:0;
+    border-bottom:none;
+  }
+  .history-actions{
+    display:flex;
+    gap:12px;
+  }
+  .text-btn{
+    font-size:11px;
+    font-weight:700;
+    color:var(--ink-soft);
+    background:none;
+    border:none;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:0;
+    white-space:nowrap;
+  }
+  .text-btn:hover{ color:var(--ink); }
+
+  /* results screen */
+  .quiz-results{ text-align:left; }
+  .results-pct{
+    font-family:'Shippori Mincho', serif;
+    font-weight:800;
+    font-size:52px;
+    color:var(--indigo);
+    text-align:center;
+    line-height:1;
+  }
+  .results-summary{
+    text-align:center;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:8px 0 6px;
+  }
+  .results-streak{
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-soft);
+    margin-bottom:22px;
+  }
+  .row-breakdown{ margin-bottom:20px; }
+  .row-breakdown-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    font-size:12.5px;
+    padding:7px 0;
+    border-bottom:1px solid var(--line);
+    color:var(--ink-soft);
+  }
+  .row-breakdown-item b{ color:var(--ink); }
+  .missed-list{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin:12px 0 4px;
+  }
+  .missed-chip{
+    background:var(--paper);
+    border:1px solid var(--line-strong);
+    border-radius:6px;
+    padding:7px 10px;
+    text-align:center;
+    min-width:52px;
+  }
+  .missed-chip .mc-char{
+    font-family:'Shippori Mincho', serif;
+    font-size:19px;
+    color:var(--ink);
+  }
+  .missed-chip .mc-r{
+    font-size:10px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .results-actions{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    flex-wrap:wrap;
+    margin-top:22px;
+  }
+  .results-actions .start-btn{ background:var(--vermilion); }
+  .results-actions .start-btn:hover{ background:#96301F; }
+  .results-actions .start-btn.secondary{ background:var(--ink); }
+  .results-actions .start-btn.secondary:hover{ background:#3a3630; }
+
   footer{
     margin-top:36px;
     padding-top:14px;
@@ -315,6 +619,7 @@
     .quiz-char{ font-size:64px; }
     .face-front .char{ font-size:34px; }
     .grid{ grid-template-columns:repeat(auto-fill, minmax(110px,1fr)); }
+    .kbd-hint{ display:none; }
   }
 
   @media (prefers-reduced-motion: reduce){
@@ -331,7 +636,15 @@
       <h1>カタカナ<span>·</span>Trainer</h1>
       <p>71 KATAKANA — BASE, DAKUTEN & HANDAKUTEN</p>
     </div>
-    <div class="stamp">研究</div>
+    <div class="masthead-right">
+      <div class="stamp">研究</div>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode">🌙</button>
+    </div>
+  </div>
+
+  <div class="script-toggle" id="script-toggle">
+    <button type="button" class="script-btn active" data-script="katakana" aria-pressed="true">カタカナ Katakana</button>
+    <button type="button" class="script-btn" data-script="hiragana" aria-pressed="false">ひらがな Hiragana</button>
   </div>
 
   <div class="tabs" role="tablist">
@@ -341,6 +654,14 @@
 
   <!-- STUDY PANEL -->
   <div class="panel active" id="panel-study">
+    <div class="progress-block">
+      <div class="progress-label"><span id="progress-count">0/71</span> known</div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+    <div class="study-toggle-row">
+      <button class="chip" id="hide-known-toggle" type="button" aria-pressed="false">Hide known (<span id="known-count">0</span>)</button>
+      <button class="chip" id="shuffle-toggle" type="button" aria-pressed="false">🔀 Shuffle</button>
+    </div>
     <div class="filters" id="filters"></div>
     <div id="grid-container"></div>
   </div>
@@ -348,17 +669,87 @@
   <!-- QUIZ PANEL -->
   <div class="panel" id="panel-quiz">
     <div class="quiz-box">
-      <div class="quiz-stats">
-        <div><b id="q-score">0</b>score</div>
-        <div><b id="q-streak">0</b>streak</div>
-        <div><b id="q-count">0/0</b>seen</div>
+
+      <div id="quiz-setup">
+        <div class="setup-block" id="history-block" style="display:none;">
+          <div class="history-header">
+            <div class="section-label">Your progress</div>
+            <div class="history-actions">
+              <button type="button" class="text-btn" id="toggle-history-btn">Show details</button>
+              <button type="button" class="text-btn" id="clear-history-btn">Clear</button>
+            </div>
+          </div>
+          <div class="best-score-line" id="best-score-line"></div>
+          <div class="history-list" id="history-list" style="display:none;"></div>
+        </div>
+        <div class="setup-block">
+          <div class="section-label">Which rows should the quiz cover?</div>
+          <div class="filters" id="quiz-row-filters"></div>
+        </div>
+        <div class="setup-block">
+          <div class="section-label">How many questions?</div>
+          <div class="setup-count">
+            <input type="number" id="q-num-questions" min="1" max="142" value="15" aria-label="Number of quiz questions">
+            <span class="setup-hint" id="q-max-hint"></span>
+          </div>
+        </div>
+        <div class="setup-block">
+          <div class="section-label">Timed mode</div>
+          <div class="setup-count">
+            <label class="timer-toggle">
+              <input type="checkbox" id="q-timed-toggle">
+              <span>Enable timer</span>
+            </label>
+            <input type="number" id="q-timer-seconds" min="3" max="60" value="8" disabled aria-label="Seconds per question">
+            <span class="setup-hint">seconds per question</span>
+          </div>
+        </div>
+        <div class="setup-block">
+          <div class="section-label">Auto-advance</div>
+          <div class="setup-count">
+            <label class="timer-toggle">
+              <input type="checkbox" id="q-autoadvance-toggle" checked>
+              <span>Skip "Next" automatically after a correct answer</span>
+            </label>
+          </div>
+        </div>
+        <button class="start-btn" id="q-start">Start quiz →</button>
       </div>
-      <div class="quiz-char" id="q-char">ア</div>
-      <div class="quiz-options" id="q-options"></div>
-      <div class="quiz-feedback" id="q-feedback" aria-live="polite"></div>
-      <button class="next-btn" id="q-next">Next →</button>
-      <br>
-      <button class="restart-btn" id="q-restart">restart quiz</button>
+
+      <div id="quiz-play" style="display:none;">
+        <div class="quiz-stats">
+          <div><b id="q-score">0</b>score</div>
+          <div><b id="q-streak">0</b>streak</div>
+          <div><b id="q-count">0/0</b>question</div>
+        </div>
+        <div class="timer-bar-wrap" id="timer-wrap" style="display:none;"><div class="timer-bar" id="timer-bar"></div></div>
+        <div class="quiz-char" id="q-char">ア</div>
+        <div class="quiz-options" id="q-options"></div>
+        <div class="kbd-hint">Press 1–4 to answer, Enter for next</div>
+        <div class="quiz-feedback" id="q-feedback" aria-live="polite"></div>
+        <button class="next-btn" id="q-next">Next →</button>
+        <br>
+        <button class="restart-btn" id="q-restart">change settings / restart</button>
+      </div>
+
+      <div id="quiz-results" style="display:none;">
+        <div class="results-pct" id="results-pct">0%</div>
+        <div class="results-summary" id="results-summary">0 / 0 correct</div>
+        <div class="results-streak" id="results-streak"></div>
+
+        <div class="row-breakdown" id="row-breakdown"></div>
+
+        <div id="missed-section">
+          <div class="section-label">Missed characters</div>
+          <div class="missed-list" id="missed-list"></div>
+        </div>
+
+        <div class="results-actions">
+          <button class="start-btn" id="practice-missed-btn">Practice missed →</button>
+          <button class="start-btn secondary" id="results-new-quiz">New quiz</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -366,7 +757,39 @@
 </div>
 
 <script>
-const DATA = [
+// ---- THEME ----
+const THEME_KEY = "katakana-trainer-theme-v1";
+function applyTheme(theme){
+  const toggle = document.getElementById("theme-toggle");
+  if(theme === "dark"){
+    document.documentElement.setAttribute("data-theme","dark");
+    toggle.textContent = "☀";
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+    toggle.textContent = "🌙";
+  }
+}
+function loadTheme(){
+  let theme = "light";
+  try{
+    const saved = localStorage.getItem(THEME_KEY);
+    if(saved){
+      theme = saved;
+    } else if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches){
+      theme = "dark";
+    }
+  }catch(e){ /* ignore */ }
+  applyTheme(theme);
+}
+document.getElementById("theme-toggle").onclick = ()=>{
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const next = isDark ? "light" : "dark";
+  applyTheme(next);
+  try{ localStorage.setItem(THEME_KEY, next); }catch(e){ /* ignore */ }
+};
+loadTheme();
+
+const KATAKANA_DATA = [
  {c:"ア",r:"a",row:"vowels",m:"Looks like an archer's bow mid-draw — 'a' for arrow."},
  {c:"イ",r:"i",row:"vowels",m:"Two simple strokes standing like a stick figure — 'i' for me."},
  {c:"ウ",r:"u",row:"vowels",m:"A roof over a dot, like a little house — 'u' for umbrella hut."},
@@ -440,10 +863,153 @@ const DATA = [
  {c:"ン",r:"n",row:"w/n",m:"A single hooked stroke, easy to mix up with ソ and ツ."}
 ];
 
+const HIRAGANA_DATA = [
+ {c:"あ",r:"a",row:"vowels",m:"Looks like a fisherman's hook catching a curling wave — 'a' for angler."},
+ {c:"い",r:"i",row:"vowels",m:"Two curved strokes leaning together like two people standing side by side."},
+ {c:"う",r:"u",row:"vowels",m:"A simple curved swoop, like a bird gliding overhead — 'u' for up."},
+ {c:"え",r:"e",row:"vowels",m:"A zigzag with a loop, like a river bending — 'e' for eel."},
+ {c:"お",r:"o",row:"vowels",m:"A loop with a flicked tail, like a spinning top — 'o' for orbit."},
+ {c:"か",r:"ka",row:"k",m:"A curved stroke with a flick, like a sickle catching the wind."},
+ {c:"き",r:"ki",row:"k",m:"Looks like a stylized key with an extra loop underneath."},
+ {c:"く",r:"ku",row:"k",m:"A simple sharp angle, like a crow's beak — 'ku' for crow."},
+ {c:"け",r:"ke",row:"k",m:"A stroke with a small flick, like steam curling off a kettle."},
+ {c:"こ",r:"ko",row:"k",m:"Two curved strokes stacked, like a coiled rope."},
+ {c:"が",r:"ga",row:"g",m:"Same curved sickle as か, buzzing with two tick marks — 'ga'."},
+ {c:"ぎ",r:"gi",row:"g",m:"Same key shape as き, jingling with a voiced buzz — 'gi'."},
+ {c:"ぐ",r:"gu",row:"g",m:"Same sharp beak as く, now growling deeper — 'gu'."},
+ {c:"げ",r:"ge",row:"g",m:"Same kettle stroke as け, hissing louder — 'ge'."},
+ {c:"ご",r:"go",row:"g",m:"Same coiled rope as こ, weighted down into a heavy 'go'."},
+ {c:"さ",r:"sa",row:"s",m:"A curved stroke with a cross, like a fishing rod and line."},
+ {c:"し",r:"shi",row:"s",m:"A single swooping hook, like a fishing hook dipping down — 'shi'."},
+ {c:"す",r:"su",row:"s",m:"A loop with a trailing tail, like a swirl of soup — 'su'."},
+ {c:"せ",r:"se",row:"s",m:"A cross with a curl, like a zipper caught mid-pull."},
+ {c:"そ",r:"so",row:"s",m:"A zigzag stroke, like a sewing needle's path — 'so'."},
+ {c:"ざ",r:"za",row:"z",m:"Same rod and line as さ, now buzzing with static — 'za'."},
+ {c:"じ",r:"ji",row:"z",m:"Same fishing hook as し, softened into a voiced 'ji'."},
+ {c:"ず",r:"zu",row:"z",m:"Same soup swirl as す, now humming a low 'zu'."},
+ {c:"ぜ",r:"ze",row:"z",m:"Same zipper cross as せ, now buzzing shut — 'ze'."},
+ {c:"ぞ",r:"zo",row:"z",m:"Same zigzag needle as そ, weighed into a heavy 'zo'."},
+ {c:"た",r:"ta",row:"t",m:"A cross with a curl, like a flag fluttering on a pole."},
+ {c:"ち",r:"chi",row:"t",m:"A single curved hook, like a small comma — 'chi'."},
+ {c:"つ",r:"tsu",row:"t",m:"A single wave crest, like a small tsunami — 'tsu'."},
+ {c:"て",r:"te",row:"t",m:"A simple curved stroke, like the edge of a table."},
+ {c:"と",r:"to",row:"t",m:"A stroke with a small hook, like a door latch clicking shut."},
+ {c:"だ",r:"da",row:"d",m:"Same flagpole cross as た, stomping down harder — 'da'."},
+ {c:"ぢ",r:"ji",row:"d",m:"Same curved comma as ち, voiced into a soft 'ji' — rare, mostly compounds."},
+ {c:"づ",r:"zu",row:"d",m:"Same wave crest as つ, now a deep rolling 'zu' — rare, mostly compounds."},
+ {c:"で",r:"de",row:"d",m:"Same table edge as て, buzzing with signal — 'de'."},
+ {c:"ど",r:"do",row:"d",m:"Same door latch as と, now planted firmly shut — 'do'."},
+ {c:"な",r:"na",row:"n",m:"A cross with a loop, like a knot tied around a nail."},
+ {c:"に",r:"ni",row:"n",m:"Two strokes with a hook, like bent knees — 'ni' rhymes with knee."},
+ {c:"ぬ",r:"nu",row:"n",m:"A loop with a twist, like noodles twirled on a fork — 'nu'."},
+ {c:"ね",r:"ne",row:"n",m:"A curled stroke with a loop, like a cat's tail curled up asleep."},
+ {c:"の",r:"no",row:"n",m:"A single spiral stroke, like crossing something off — 'no'."},
+ {c:"は",r:"ha",row:"h",m:"A stroke with a small leg, like Mount Fuji's silhouette."},
+ {c:"ひ",r:"hi",row:"h",m:"A single curved smile — like a soft 'hee hee'."},
+ {c:"ふ",r:"fu",row:"h",m:"Two soft curved strokes, like a puff of wind — 'fu'."},
+ {c:"へ",r:"he",row:"h",m:"A single peaked stroke, like a small hat brim — 'he'."},
+ {c:"ほ",r:"ho",row:"h",m:"A stroke with two small ticks, like a house with little windows."},
+ {c:"ば",r:"ba",row:"b",m:"Same Fuji silhouette as は, now booming — 'ba'."},
+ {c:"び",r:"bi",row:"b",m:"Same curved smile as ひ, now buzzing — 'bi'."},
+ {c:"ぶ",r:"bu",row:"b",m:"Same puff of wind as ふ, now humming low — 'bu'."},
+ {c:"べ",r:"be",row:"b",m:"Same hat brim as へ, now buzzing — 'be'."},
+ {c:"ぼ",r:"bo",row:"b",m:"Same little house as ほ, now with a booming doorbell — 'bo'."},
+ {c:"ぱ",r:"pa",row:"p",m:"Same Fuji silhouette as は, topped with a tiny circle — a light popping 'pa'."},
+ {c:"ぴ",r:"pi",row:"p",m:"Same curved smile as ひ, with a little circle earring — 'pi'."},
+ {c:"ぷ",r:"pu",row:"p",m:"Same puff of wind as ふ, with one extra little puff — 'pu'."},
+ {c:"ぺ",r:"pe",row:"p",m:"Same hat brim as へ, with a little pom-pom on top — 'pe'."},
+ {c:"ぽ",r:"po",row:"p",m:"Same little house as ほ, with a round doorknob — 'po'."},
+ {c:"ま",r:"ma",row:"m",m:"A cross with a loop, like a mother's hand reaching out."},
+ {c:"み",r:"mi",row:"m",m:"Two curved strokes crossing, like tangled thread — 'mi'."},
+ {c:"む",r:"mu",row:"m",m:"A looping stroke, like a cow's curled tail — 'mu' for moo."},
+ {c:"め",r:"me",row:"m",m:"A curved stroke with a loop, like a squinting eye — 'me' means eye."},
+ {c:"も",r:"mo",row:"m",m:"A cross with a curl, like a fishing hook pulling up a mole."},
+ {c:"や",r:"ya",row:"y",m:"A stroke with a hook, like a slingshot mid-launch — 'ya'."},
+ {c:"ゆ",r:"yu",row:"y",m:"A curved loop, like a U-turn sign — 'yu'."},
+ {c:"よ",r:"yo",row:"y",m:"A stroke with a hook and loop, like a shelf bracket — 'yo'."},
+ {c:"ら",r:"ra",row:"r",m:"A stroke with a curl, like a rabbit's ear flopping over."},
+ {c:"り",r:"ri",row:"r",m:"Two strokes standing side by side, like chopsticks — 'ri'."},
+ {c:"る",r:"ru",row:"r",m:"A loop with a tail, like a rolling wheel — 'ru'."},
+ {c:"れ",r:"re",row:"r",m:"A curved stroke with a hook, like a check-mark tick — 're'."},
+ {c:"ろ",r:"ro",row:"r",m:"A single looping stroke, like a coiled road — 'ro'."},
+ {c:"わ",r:"wa",row:"w/n",m:"A curved stroke like a person bent at the waist bowing — 'wa'."},
+ {c:"を",r:"wo",row:"w/n",m:"Rare particle-only character — a wrapped ribbon shape."},
+ {c:"ん",r:"n",row:"w/n",m:"A simple curved hook, easy to mix up with れ and ろ."}
+];
+
+// ---- SCRIPT SWITCHING (katakana / hiragana) ----
+const SCRIPT_KEY = "katakana-trainer-script-v1";
+let currentScript = "katakana";
+
+function activeData(){
+  return currentScript === "hiragana" ? HIRAGANA_DATA : KATAKANA_DATA;
+}
+
+function loadScriptPref(){
+  try{
+    const saved = localStorage.getItem(SCRIPT_KEY);
+    if(saved === "hiragana" || saved === "katakana") currentScript = saved;
+  }catch(e){ /* ignore */ }
+}
+
+function applyScriptUI(){
+  document.querySelectorAll(".script-btn").forEach(b=>{
+    const active = b.dataset.script === currentScript;
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-pressed", active);
+  });
+}
+
+document.querySelectorAll(".script-btn").forEach(b=>{
+  b.onclick = ()=>{
+    if(b.dataset.script === currentScript) return;
+    currentScript = b.dataset.script;
+    try{ localStorage.setItem(SCRIPT_KEY, currentScript); }catch(e){ /* ignore */ }
+    applyScriptUI();
+    renderFilters();
+    renderGrid();
+    updateKnownCount();
+    updateStudyProgress();
+    renderQuizRowFilters();
+    updateSetupHint();
+    renderBestScore();
+    // an in-progress quiz mixes scripts awkwardly, so bail back to setup on switch
+    if(document.getElementById("quiz-play").style.display !== "none"){
+      showQuizSetup();
+    }
+  };
+});
+
 const ROWS = ["all","vowels","k","g","s","z","t","d","n","h","b","p","m","y","r","w/n"];
 const ROW_LABELS = {all:"All",vowels:"Vowels",k:"K row","g":"G row","s":"S row","z":"Z row",t:"T row","d":"D row",n:"N row",h:"H row","b":"B row","p":"P row",m:"M row",y:"Y row",r:"R row","w/n":"W / N"};
 
 let currentFilter = "all";
+let shuffleStudy = false;
+
+// ---- KNOWN CHARACTERS (study mode) ----
+const KNOWN_KEY = "katakana-trainer-known-chars-v1";
+let knownChars = new Set();
+let hideKnown = false;
+
+function loadKnownChars(){
+  try{
+    const raw = localStorage.getItem(KNOWN_KEY);
+    if(raw) knownChars = new Set(JSON.parse(raw));
+  }catch(e){ /* ignore */ }
+}
+function saveKnownChars(){
+  try{ localStorage.setItem(KNOWN_KEY, JSON.stringify(Array.from(knownChars))); }catch(e){ /* ignore */ }
+}
+function updateKnownCount(){
+  const knownInScript = activeData().filter(d=>knownChars.has(d.c)).length;
+  document.getElementById("known-count").textContent = knownInScript;
+}
+function updateStudyProgress(){
+  const total = activeData().length;
+  const known = activeData().filter(d=>knownChars.has(d.c)).length;
+  document.getElementById("progress-count").textContent = known + "/" + total;
+  document.getElementById("progress-fill").style.width = (total > 0 ? (known / total) * 100 : 0) + "%";
+}
 
 function renderFilters(){
   const el = document.getElementById("filters");
@@ -461,12 +1027,15 @@ function renderFilters(){
 function renderGrid(){
   const container = document.getElementById("grid-container");
   container.innerHTML = "";
-  const items = currentFilter==="all" ? DATA : DATA.filter(d=>d.row===currentFilter);
+  let items = currentFilter==="all" ? activeData() : activeData().filter(d=>d.row===currentFilter);
+  if(hideKnown) items = items.filter(d=>!knownChars.has(d.c));
+  if(shuffleStudy) items = shuffle(items);
   const grid = document.createElement("div");
   grid.className = "grid";
   items.forEach(item=>{
+    const isKnown = knownChars.has(item.c);
     const card = document.createElement("div");
-    card.className = "card";
+    card.className = "card" + (isKnown ? " known" : "");
     card.setAttribute("tabindex","0");
     card.setAttribute("role","button");
     card.setAttribute("aria-label", "Flip card for " + item.c);
@@ -479,14 +1048,36 @@ function renderGrid(){
         <div class="face face-back">
           <div class="romaji">${item.r}</div>
           <div class="mnemonic">${item.m}</div>
+          <button type="button" class="mark-known-btn" aria-pressed="${isKnown}">${isKnown ? "★ Known" : "☆ Mark known"}</button>
         </div>
       </div>`;
     const flip = ()=> card.classList.toggle("flipped");
     card.onclick = flip;
     card.onkeydown = (e)=>{
+      if(e.target !== card) return; // let the mark-known button handle its own keypresses
       if(e.key === "Enter" || e.key === " "){
         e.preventDefault();
         flip();
+      }
+    };
+    const markBtn = card.querySelector(".mark-known-btn");
+    markBtn.onclick = (e)=>{
+      e.stopPropagation();
+      if(knownChars.has(item.c)){
+        knownChars.delete(item.c);
+      } else {
+        knownChars.add(item.c);
+      }
+      saveKnownChars();
+      updateKnownCount();
+      updateStudyProgress();
+      if(hideKnown){
+        renderGrid();
+      } else {
+        const nowKnown = knownChars.has(item.c);
+        markBtn.textContent = nowKnown ? "★ Known" : "☆ Mark known";
+        markBtn.setAttribute("aria-pressed", nowKnown);
+        card.classList.toggle("known", nowKnown);
       }
     };
     grid.appendChild(card);
@@ -494,9 +1085,28 @@ function renderGrid(){
   container.appendChild(grid);
 }
 
+loadScriptPref();
+applyScriptUI();
+loadKnownChars();
+document.getElementById("hide-known-toggle").onclick = function(){
+  hideKnown = !hideKnown;
+  this.classList.toggle("active", hideKnown);
+  this.setAttribute("aria-pressed", hideKnown);
+  renderGrid();
+};
+document.getElementById("shuffle-toggle").onclick = function(){
+  shuffleStudy = !shuffleStudy;
+  this.classList.toggle("active", shuffleStudy);
+  this.setAttribute("aria-pressed", shuffleStudy);
+  renderGrid();
+};
+updateKnownCount();
+updateStudyProgress();
+
 // tabs
 document.querySelectorAll(".tab").forEach(tab=>{
   tab.onclick = ()=>{
+    clearTimer();
     document.querySelectorAll(".tab").forEach(t=>{
       t.classList.remove("active");
       t.setAttribute("aria-selected","false");
@@ -505,7 +1115,7 @@ document.querySelectorAll(".tab").forEach(tab=>{
     tab.classList.add("active");
     tab.setAttribute("aria-selected","true");
     document.getElementById("panel-"+tab.dataset.tab).classList.add("active");
-    if(tab.dataset.tab==="quiz") initQuiz();
+    if(tab.dataset.tab==="quiz") showQuizSetup();
   };
 });
 
@@ -513,11 +1123,40 @@ renderFilters();
 renderGrid();
 
 // ---- QUIZ LOGIC ----
-let quizPool = [];
+const QUIZ_ROW_KEYS = ROWS.filter(r=>r!=="all");
+const BASE_MAX_QUESTIONS = 60;   // cap when quizzing a subset of rows
+const ALL_MAX_QUESTIONS = 142;   // cap when every row is selected (2x the full 71-character set)
+
+function getMaxQuestions(){
+  return selectedQuizRows.size === QUIZ_ROW_KEYS.length ? ALL_MAX_QUESTIONS : BASE_MAX_QUESTIONS;
+}
+function historyKey(){
+  return "katakana-trainer-quiz-history-v1-" + currentScript;
+}
+
+let selectedQuizRows = new Set(QUIZ_ROW_KEYS); // which rows the quiz draws from
+let quizQuestions = [];
 let quizIdx = 0;
+let numQuestions = 15;
 let score = 0;
 let streak = 0;
 let answered = false;
+let quizMissed = [];      // items answered incorrectly this run
+let rowStats = {};        // {rowKey: {correct, total}} this run
+let currentQuizLabel = ""; // human-readable description of what was quizzed, for history
+let timedMode = false;
+let timerSeconds = 8;
+let timerInterval = null;
+let autoAdvance = true;
+let autoAdvanceTimeout = null;
+let maxStreakThisRun = 0;
+
+function clearAutoAdvance(){
+  if(autoAdvanceTimeout){
+    clearTimeout(autoAdvanceTimeout);
+    autoAdvanceTimeout = null;
+  }
+}
 
 function shuffle(arr){
   const a = arr.slice();
@@ -528,36 +1167,141 @@ function shuffle(arr){
   return a;
 }
 
-function initQuiz(){
-  quizPool = shuffle(DATA);
-  quizIdx = 0;
-  score = 0;
-  streak = 0;
-  updateStats();
-  loadQuestion();
+function uniqueByRomaji(arr){
+  const seen = new Set();
+  const out = [];
+  arr.forEach(d=>{
+    if(!seen.has(d.r)){ seen.add(d.r); out.push(d); }
+  });
+  return out;
+}
+
+function uniqueByChar(arr){
+  const seen = new Set();
+  const out = [];
+  arr.forEach(d=>{
+    if(!seen.has(d.c)){ seen.add(d.c); out.push(d); }
+  });
+  return out;
+}
+
+function activeQuizPool(){
+  return activeData().filter(d=>selectedQuizRows.has(d.row));
+}
+
+// build the question list: cycles through a shuffled pool as many times as
+// needed so a small selection can still support a large question count
+function buildQuizQuestions(pool, n){
+  let out = [];
+  while(out.length < n){
+    out = out.concat(shuffle(pool));
+  }
+  return out.slice(0, n);
+}
+
+function getWrongOptions(item){
+  let candidates = uniqueByRomaji(activeQuizPool().filter(d=>d.r !== item.r));
+  if(candidates.length < 3){
+    const extra = uniqueByRomaji(activeData().filter(d=>d.r !== item.r && !candidates.some(c=>c.r===d.r)));
+    candidates = candidates.concat(extra);
+  }
+  return shuffle(candidates).slice(0,3).map(d=>d.r);
+}
+
+function renderQuizRowFilters(){
+  const el = document.getElementById("quiz-row-filters");
+  el.innerHTML = "";
+
+  const allActive = selectedQuizRows.size === QUIZ_ROW_KEYS.length;
+  const allBtn = document.createElement("button");
+  allBtn.type = "button";
+  allBtn.className = "chip" + (allActive ? " active" : "");
+  allBtn.textContent = "All";
+  allBtn.setAttribute("aria-pressed", allActive ? "true" : "false");
+  allBtn.onclick = ()=>{
+    selectedQuizRows = new Set(QUIZ_ROW_KEYS);
+    renderQuizRowFilters();
+    updateSetupHint();
+  };
+  el.appendChild(allBtn);
+
+  QUIZ_ROW_KEYS.forEach(row=>{
+    const active = selectedQuizRows.has(row);
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip" + (active ? " active" : "");
+    b.textContent = ROW_LABELS[row];
+    b.setAttribute("aria-pressed", active ? "true" : "false");
+    b.onclick = ()=>{
+      if(selectedQuizRows.has(row)){
+        if(selectedQuizRows.size > 1) selectedQuizRows.delete(row); // always keep at least one row selected
+      } else {
+        selectedQuizRows.add(row);
+      }
+      renderQuizRowFilters();
+      updateSetupHint();
+    };
+    el.appendChild(b);
+  });
+}
+
+function updateSetupHint(){
+  const n = activeQuizPool().length;
+  const maxQ = getMaxQuestions();
+  const input = document.getElementById("q-num-questions");
+  input.max = maxQ;
+  const requested = parseInt(input.value, 10) || 0;
+  let msg = n + " character" + (n===1 ? "" : "s") + " in this selection.";
+  if(requested > n && n > 0 && requested <= maxQ){
+    msg += " Some will repeat to reach " + requested + " questions.";
+  }
+  if(requested > maxQ){
+    msg += " Max is " + maxQ + " questions" + (maxQ === ALL_MAX_QUESTIONS ? " with all rows selected." : " for this selection — pick more rows to raise the cap.");
+  }
+  document.getElementById("q-max-hint").textContent = msg;
+}
+
+document.getElementById("q-timed-toggle").onchange = function(){
+  document.getElementById("q-timer-seconds").disabled = !this.checked;
+};
+
+function resetPlayDisplays(){
+  clearTimer();
+  clearAutoAdvance();
+  document.getElementById("q-char").style.display = "";
+  document.getElementById("q-options").style.display = "";
+  document.getElementById("q-feedback").style.display = "";
+  document.getElementById("quiz-results").style.display = "none";
+  document.getElementById("timer-wrap").style.display = "none";
+}
+
+function showQuizSetup(){
+  document.getElementById("quiz-play").style.display = "none";
+  resetPlayDisplays();
+  document.getElementById("quiz-setup").style.display = "block";
+  renderBestScore();
 }
 
 function updateStats(){
   document.getElementById("q-score").textContent = score;
   document.getElementById("q-streak").textContent = streak;
-  document.getElementById("q-count").textContent = Math.min(quizIdx,DATA.length) + "/" + DATA.length;
+  document.getElementById("q-count").textContent = Math.min(quizIdx, numQuestions) + "/" + numQuestions;
 }
 
 function loadQuestion(){
+  clearTimer();
+  clearAutoAdvance();
   answered = false;
   document.getElementById("q-next").style.display = "none";
   document.getElementById("q-feedback").textContent = "";
-  if(quizIdx >= quizPool.length){
-    document.getElementById("q-char").textContent = "🎉";
-    document.getElementById("q-options").innerHTML = "";
-    document.getElementById("q-feedback").textContent = "Quiz complete — final score " + score + "/" + DATA.length + ". Tap restart to go again.";
+  if(quizIdx >= quizQuestions.length){
+    showResults();
     return;
   }
-  const item = quizPool[quizIdx];
+  const item = quizQuestions[quizIdx];
   document.getElementById("q-char").textContent = item.c;
 
-  const wrongPool = DATA.filter(d=>d.r !== item.r);
-  const wrongs = shuffle(wrongPool).slice(0,3).map(d=>d.r);
+  const wrongs = getWrongOptions(item);
   const options = shuffle([item.r, ...wrongs]);
 
   const optDiv = document.getElementById("q-options");
@@ -566,36 +1310,312 @@ function loadQuestion(){
     const b = document.createElement("button");
     b.className = "opt-btn";
     b.textContent = opt;
-    b.onclick = ()=> selectAnswer(b, opt, item.r);
+    b.onclick = ()=> selectAnswer(b, opt, item);
     optDiv.appendChild(b);
   });
   updateStats();
+
+  const timerWrap = document.getElementById("timer-wrap");
+  if(timedMode){
+    timerWrap.style.display = "block";
+    startTimer();
+  } else {
+    timerWrap.style.display = "none";
+  }
 }
 
-function selectAnswer(btn, chosen, correct){
+function startTimer(){
+  clearTimer();
+  const bar = document.getElementById("timer-bar");
+  bar.style.transition = "none";
+  bar.style.width = "100%";
+  bar.classList.remove("low");
+  void bar.offsetWidth; // force reflow so the transition re-applies cleanly
+  bar.style.transition = "width 0.1s linear, background-color 0.2s ease";
+
+  const totalMs = timerSeconds * 1000;
+  const startTime = Date.now();
+  timerInterval = setInterval(()=>{
+    const elapsed = Date.now() - startTime;
+    const remainingMs = Math.max(0, totalMs - elapsed);
+    const pct = (remainingMs / totalMs) * 100;
+    bar.style.width = pct + "%";
+    if(pct <= 25) bar.classList.add("low");
+    if(remainingMs <= 0){
+      clearTimer();
+      handleTimeout();
+    }
+  }, 100);
+}
+
+function clearTimer(){
+  if(timerInterval){
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
+function handleTimeout(){
   if(answered) return;
   answered = true;
+  const item = quizQuestions[quizIdx];
   const buttons = document.querySelectorAll(".opt-btn");
   buttons.forEach(b=>{
     b.disabled = true;
-    if(b.textContent === correct) b.classList.add("correct");
+    if(b.textContent === item.r) b.classList.add("correct");
   });
-  if(chosen === correct){
-    score++;
-    streak++;
-    document.getElementById("q-feedback").textContent = "Correct.";
-  } else {
-    btn.classList.add("wrong");
-    streak = 0;
-    document.getElementById("q-feedback").textContent = "Not quite — correct answer highlighted.";
-  }
+  if(!rowStats[item.row]) rowStats[item.row] = {correct:0, total:0};
+  rowStats[item.row].total++;
+  streak = 0;
+  quizMissed.push(item);
+  document.getElementById("q-feedback").textContent = "Time's up — correct answer highlighted.";
   quizIdx++;
   updateStats();
   document.getElementById("q-next").style.display = "inline-block";
 }
 
+function selectAnswer(btn, chosen, item){
+  if(answered) return;
+  clearTimer();
+  answered = true;
+  const correct = item.r;
+  const buttons = document.querySelectorAll(".opt-btn");
+  buttons.forEach(b=>{
+    b.disabled = true;
+    if(b.textContent === correct) b.classList.add("correct");
+  });
+
+  if(!rowStats[item.row]) rowStats[item.row] = {correct:0, total:0};
+  rowStats[item.row].total++;
+
+  let wasCorrect = false;
+  if(chosen === correct){
+    wasCorrect = true;
+    score++;
+    streak++;
+    if(streak > maxStreakThisRun) maxStreakThisRun = streak;
+    rowStats[item.row].correct++;
+    document.getElementById("q-feedback").textContent = "Correct.";
+  } else {
+    btn.classList.add("wrong");
+    streak = 0;
+    quizMissed.push(item);
+    document.getElementById("q-feedback").textContent = "Not quite — correct answer highlighted.";
+  }
+  quizIdx++;
+  updateStats();
+
+  if(wasCorrect && autoAdvance){
+    document.getElementById("q-next").style.display = "none";
+    autoAdvanceTimeout = setTimeout(loadQuestion, 550);
+  } else {
+    document.getElementById("q-next").style.display = "inline-block";
+  }
+}
+
+function showResults(){
+  document.getElementById("q-char").style.display = "none";
+  document.getElementById("q-options").style.display = "none";
+  document.getElementById("q-feedback").style.display = "none";
+  document.getElementById("q-next").style.display = "none";
+  document.getElementById("quiz-results").style.display = "block";
+
+  const pct = numQuestions > 0 ? Math.round((score / numQuestions) * 100) : 0;
+  document.getElementById("results-pct").textContent = pct + "%";
+  document.getElementById("results-summary").textContent = score + " / " + numQuestions + " correct";
+  document.getElementById("results-streak").textContent = maxStreakThisRun > 0
+    ? "Longest streak this run: " + maxStreakThisRun
+    : "";
+
+  // per-row breakdown, weakest rows first
+  const breakdownEl = document.getElementById("row-breakdown");
+  breakdownEl.innerHTML = "";
+  Object.keys(rowStats)
+    .sort((a,b)=> (rowStats[a].correct/rowStats[a].total) - (rowStats[b].correct/rowStats[b].total))
+    .forEach(row=>{
+      const s = rowStats[row];
+      const rpct = Math.round((s.correct/s.total)*100);
+      const div = document.createElement("div");
+      div.className = "row-breakdown-item";
+      div.innerHTML = "<span>" + ROW_LABELS[row] + "</span><b>" + s.correct + "/" + s.total + " (" + rpct + "%)</b>";
+      breakdownEl.appendChild(div);
+    });
+
+  // missed characters
+  const uniqueMissed = uniqueByChar(quizMissed);
+  const missedSection = document.getElementById("missed-section");
+  const missedList = document.getElementById("missed-list");
+  missedList.innerHTML = "";
+  if(uniqueMissed.length === 0){
+    missedSection.style.display = "none";
+  } else {
+    missedSection.style.display = "block";
+    uniqueMissed.forEach(item=>{
+      const chip = document.createElement("div");
+      chip.className = "missed-chip";
+      chip.innerHTML = "<div class=\"mc-char\">" + item.c + "</div><div class=\"mc-r\">" + item.r + "</div>";
+      missedList.appendChild(chip);
+    });
+  }
+  document.getElementById("practice-missed-btn").style.display = uniqueMissed.length > 0 ? "inline-block" : "none";
+
+  saveQuizResult(pct);
+}
+
+function startQuizWithPool(pool, n, label){
+  currentQuizLabel = label || (selectedQuizRows.size === QUIZ_ROW_KEYS.length
+    ? "All rows"
+    : Array.from(selectedQuizRows).map(r=>ROW_LABELS[r]).join(", "));
+
+  timedMode = document.getElementById("q-timed-toggle").checked;
+  let secs = parseInt(document.getElementById("q-timer-seconds").value, 10);
+  if(isNaN(secs) || secs < 3) secs = 3;
+  if(secs > 60) secs = 60;
+  timerSeconds = secs;
+  autoAdvance = document.getElementById("q-autoadvance-toggle").checked;
+
+  numQuestions = n;
+  quizQuestions = buildQuizQuestions(pool, numQuestions);
+  quizIdx = 0;
+  score = 0;
+  streak = 0;
+  maxStreakThisRun = 0;
+  quizMissed = [];
+  rowStats = {};
+  document.getElementById("quiz-setup").style.display = "none";
+  resetPlayDisplays();
+  document.getElementById("quiz-play").style.display = "block";
+  updateStats();
+  loadQuestion();
+}
+
+// ---- persistence: best score, best streak & recent history (saved in this browser) ----
+function saveQuizResult(pct){
+  try{
+    const raw = localStorage.getItem(historyKey());
+    const data = raw ? JSON.parse(raw) : {best:null, bestStreak:0, history:[]};
+    if(typeof data.bestStreak !== "number") data.bestStreak = 0;
+    const entry = {pct:pct, score:score, total:numQuestions, rows:currentQuizLabel, date:new Date().toISOString()};
+    data.history.unshift(entry);
+    data.history = data.history.slice(0,5);
+    if(!data.best || pct > data.best.pct){
+      data.best = entry;
+    }
+    if(maxStreakThisRun > data.bestStreak){
+      data.bestStreak = maxStreakThisRun;
+    }
+    localStorage.setItem(historyKey(), JSON.stringify(data));
+  }catch(e){
+    // localStorage unavailable (private browsing etc.) — fail silently
+  }
+}
+
+function renderBestScore(){
+  const block = document.getElementById("history-block");
+  const bestLine = document.getElementById("best-score-line");
+  const listEl = document.getElementById("history-list");
+  const toggleBtn = document.getElementById("toggle-history-btn");
+  try{
+    const raw = localStorage.getItem(historyKey());
+    if(!raw){ block.style.display = "none"; return; }
+    const data = JSON.parse(raw);
+    if(!data.best){ block.style.display = "none"; return; }
+    block.style.display = "block";
+    bestLine.textContent = "Best: " + data.best.pct + "% (" + data.best.score + "/" + data.best.total + ") — " + data.best.rows +
+      (data.bestStreak ? " · Best streak: " + data.bestStreak : "");
+    listEl.innerHTML = "";
+    (data.history || []).forEach(entry=>{
+      const d = new Date(entry.date);
+      const div = document.createElement("div");
+      div.className = "history-item";
+      div.textContent = entry.pct + "% (" + entry.score + "/" + entry.total + ") — " + entry.rows + " — " + d.toLocaleDateString() + " " + d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
+      listEl.appendChild(div);
+    });
+    // keep details collapsed by default each time the setup screen appears
+    listEl.style.display = "none";
+    toggleBtn.textContent = "Show details";
+  }catch(e){
+    block.style.display = "none";
+  }
+}
+
+document.getElementById("toggle-history-btn").onclick = function(){
+  const listEl = document.getElementById("history-list");
+  const isHidden = listEl.style.display === "none";
+  listEl.style.display = isHidden ? "block" : "none";
+  this.textContent = isHidden ? "Hide details" : "Show details";
+};
+
+let clearConfirmTimeout = null;
+document.getElementById("clear-history-btn").onclick = function(){
+  if(this.dataset.confirming === "true"){
+    // second click within the window — actually clear
+    clearTimeout(clearConfirmTimeout);
+    this.dataset.confirming = "false";
+    this.textContent = "Clear";
+    try{ localStorage.removeItem(historyKey()); }catch(e){ /* ignore */ }
+    document.getElementById("history-block").style.display = "none";
+    document.getElementById("history-list").innerHTML = "";
+    return;
+  }
+  // first click — arm the confirmation
+  this.dataset.confirming = "true";
+  this.textContent = "Click again to confirm";
+  const btn = this;
+  clearConfirmTimeout = setTimeout(()=>{
+    btn.dataset.confirming = "false";
+    btn.textContent = "Clear";
+  }, 4000);
+};
+
+document.getElementById("q-start").onclick = ()=>{
+  const pool = activeQuizPool();
+  if(pool.length === 0) return;
+  const maxQ = getMaxQuestions();
+  let requested = parseInt(document.getElementById("q-num-questions").value, 10);
+  if(isNaN(requested) || requested < 1) requested = 1;
+  if(requested > maxQ) requested = maxQ;
+  startQuizWithPool(pool, requested);
+};
+
+document.getElementById("practice-missed-btn").onclick = ()=>{
+  const uniqueMissed = uniqueByChar(quizMissed);
+  if(uniqueMissed.length === 0) return;
+  startQuizWithPool(uniqueMissed, Math.min(uniqueMissed.length, ALL_MAX_QUESTIONS), "Practice: missed characters");
+};
+
+document.getElementById("results-new-quiz").onclick = showQuizSetup;
+document.getElementById("q-num-questions").oninput = updateSetupHint;
 document.getElementById("q-next").onclick = loadQuestion;
-document.getElementById("q-restart").onclick = initQuiz;
+document.getElementById("q-restart").onclick = showQuizSetup;
+
+// keyboard shortcuts: 1-4 picks an answer, Enter advances to the next question
+document.addEventListener("keydown", (e)=>{
+  const quizPanelActive = document.getElementById("panel-quiz").classList.contains("active");
+  if(!quizPanelActive) return;
+  const activeTag = (document.activeElement && document.activeElement.tagName) || "";
+  if(activeTag === "INPUT" || activeTag === "TEXTAREA") return;
+  const playVisible = document.getElementById("quiz-play").style.display !== "none";
+  if(!playVisible) return;
+
+  if(["1","2","3","4"].includes(e.key)){
+    const idx = parseInt(e.key, 10) - 1;
+    const buttons = document.querySelectorAll("#q-options .opt-btn");
+    if(buttons[idx] && !buttons[idx].disabled){
+      buttons[idx].click();
+    }
+  } else if(e.key === "Enter"){
+    const nextBtn = document.getElementById("q-next");
+    if(nextBtn.style.display !== "none"){
+      e.preventDefault();
+      nextBtn.click();
+    }
+  }
+});
+
+renderQuizRowFilters();
+updateSetupHint();
+renderBestScore();
 </script>
 </body>
 </html>
