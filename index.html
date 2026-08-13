@@ -380,6 +380,52 @@
     color:#FAECE7;
   }
   .opt-btn:disabled{ cursor:default; opacity:1; }
+
+  .quiz-type-answer{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-bottom:8px;
+  }
+  .type-input{
+    flex:1;
+    max-width:220px;
+    padding:14px;
+    font-size:16px;
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    border:1.5px solid var(--line-strong);
+    border-radius:8px;
+    background:var(--paper);
+    color:var(--ink);
+    text-align:center;
+  }
+  .type-input:focus-visible{
+    outline:2px solid var(--indigo);
+    outline-offset:2px;
+  }
+  .type-input.correct{
+    border-color:#3B6D11;
+    background:#EAF3DE;
+    color:#1f3d0a;
+  }
+  .type-input.wrong{
+    border-color:var(--vermilion);
+    background:#F7E3DF;
+    color:#5c1c12;
+  }
+  .type-submit-btn{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-weight:700;
+    font-size:14px;
+    padding:0 20px;
+    background:var(--indigo);
+    color:var(--paper);
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+  }
+  .type-submit-btn:hover:not(:disabled){ background:var(--indigo-soft); }
+  .type-submit-btn:disabled{ opacity:0.5; cursor:default; }
   .quiz-feedback{
     min-height:20px;
     font-size:12.5px;
@@ -683,6 +729,13 @@
           <div class="history-list" id="history-list" style="display:none;"></div>
         </div>
         <div class="setup-block">
+          <div class="section-label">Answer format</div>
+          <div class="filters" id="quiz-mode-toggle">
+            <button type="button" class="chip active" data-mode="choice" aria-pressed="true">Multiple choice</button>
+            <button type="button" class="chip" data-mode="type" aria-pressed="false">Type the romaji</button>
+          </div>
+        </div>
+        <div class="setup-block">
           <div class="section-label">Which rows should the quiz cover?</div>
           <div class="filters" id="quiz-row-filters"></div>
         </div>
@@ -725,7 +778,11 @@
         <div class="timer-bar-wrap" id="timer-wrap" style="display:none;"><div class="timer-bar" id="timer-bar"></div></div>
         <div class="quiz-char" id="q-char">ア</div>
         <div class="quiz-options" id="q-options"></div>
-        <div class="kbd-hint">Press 1–4 to answer, Enter for next</div>
+        <div class="quiz-type-answer" id="quiz-type-answer" style="display:none;">
+          <input type="text" id="q-type-input" class="type-input" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="type the romaji…" aria-label="Type the romaji reading">
+          <button type="button" class="type-submit-btn" id="q-type-submit">Check</button>
+        </div>
+        <div class="kbd-hint" id="kbd-hint">Press 1–4 to answer, Enter for next</div>
         <div class="quiz-feedback" id="q-feedback" aria-live="polite"></div>
         <button class="next-btn" id="q-next">Next →</button>
         <br>
@@ -1150,6 +1207,16 @@ let timerInterval = null;
 let autoAdvance = true;
 let autoAdvanceTimeout = null;
 let maxStreakThisRun = 0;
+let quizMode = "choice"; // "choice" | "type"
+
+// common alternate romanizations (Kunrei-shiki etc.) accepted as correct
+const ROMAJI_ALIASES = {
+  "si":"shi", "ti":"chi", "tu":"tsu", "hu":"fu",
+  "zi":"ji", "di":"ji", "du":"zu"
+};
+function normalizeRomaji(s){
+  return ROMAJI_ALIASES[s] || s;
+}
 
 function clearAutoAdvance(){
   if(autoAdvanceTimeout){
@@ -1265,11 +1332,38 @@ document.getElementById("q-timed-toggle").onchange = function(){
   document.getElementById("q-timer-seconds").disabled = !this.checked;
 };
 
+document.querySelectorAll("#quiz-mode-toggle .chip").forEach(btn=>{
+  btn.onclick = ()=>{
+    quizMode = btn.dataset.mode;
+    document.querySelectorAll("#quiz-mode-toggle .chip").forEach(b=>{
+      const active = b.dataset.mode === quizMode;
+      b.classList.toggle("active", active);
+      b.setAttribute("aria-pressed", active);
+    });
+  };
+});
+
+document.getElementById("q-type-submit").onclick = submitTypedAnswer;
+document.getElementById("q-type-input").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    e.preventDefault();
+    if(!answered){
+      submitTypedAnswer();
+    } else {
+      const nextBtn = document.getElementById("q-next");
+      if(nextBtn.style.display !== "none"){
+        nextBtn.click();
+      }
+    }
+  }
+});
+
 function resetPlayDisplays(){
   clearTimer();
   clearAutoAdvance();
   document.getElementById("q-char").style.display = "";
   document.getElementById("q-options").style.display = "";
+  document.getElementById("quiz-type-answer").style.display = "none";
   document.getElementById("q-feedback").style.display = "";
   document.getElementById("quiz-results").style.display = "none";
   document.getElementById("timer-wrap").style.display = "none";
@@ -1301,18 +1395,36 @@ function loadQuestion(){
   const item = quizQuestions[quizIdx];
   document.getElementById("q-char").textContent = item.c;
 
-  const wrongs = getWrongOptions(item);
-  const options = shuffle([item.r, ...wrongs]);
-
   const optDiv = document.getElementById("q-options");
-  optDiv.innerHTML = "";
-  options.forEach(opt=>{
-    const b = document.createElement("button");
-    b.className = "opt-btn";
-    b.textContent = opt;
-    b.onclick = ()=> selectAnswer(b, opt, item);
-    optDiv.appendChild(b);
-  });
+  const typeWrap = document.getElementById("quiz-type-answer");
+  const kbdHint = document.getElementById("kbd-hint");
+
+  if(quizMode === "type"){
+    optDiv.style.display = "none";
+    optDiv.innerHTML = "";
+    typeWrap.style.display = "flex";
+    kbdHint.textContent = "Press Enter to check, Enter again for next";
+    const input = document.getElementById("q-type-input");
+    input.value = "";
+    input.disabled = false;
+    input.classList.remove("correct","wrong");
+    document.getElementById("q-type-submit").disabled = false;
+    setTimeout(()=>{ input.focus(); }, 30);
+  } else {
+    typeWrap.style.display = "none";
+    kbdHint.textContent = "Press 1–4 to answer, Enter for next";
+    optDiv.style.display = "";
+    const wrongs = getWrongOptions(item);
+    const options = shuffle([item.r, ...wrongs]);
+    optDiv.innerHTML = "";
+    options.forEach(opt=>{
+      const b = document.createElement("button");
+      b.className = "opt-btn";
+      b.textContent = opt;
+      b.onclick = ()=> selectAnswer(b, opt, item);
+      optDiv.appendChild(b);
+    });
+  }
   updateStats();
 
   const timerWrap = document.getElementById("timer-wrap");
@@ -1359,19 +1471,44 @@ function handleTimeout(){
   if(answered) return;
   answered = true;
   const item = quizQuestions[quizIdx];
-  const buttons = document.querySelectorAll(".opt-btn");
-  buttons.forEach(b=>{
-    b.disabled = true;
-    if(b.textContent === item.r) b.classList.add("correct");
-  });
+  if(quizMode === "type"){
+    const input = document.getElementById("q-type-input");
+    input.disabled = true;
+    input.classList.add("wrong");
+    document.getElementById("q-type-submit").disabled = true;
+    document.getElementById("q-feedback").textContent = "Time's up — correct answer: " + item.r;
+  } else {
+    const buttons = document.querySelectorAll(".opt-btn");
+    buttons.forEach(b=>{
+      b.disabled = true;
+      if(b.textContent === item.r) b.classList.add("correct");
+    });
+    document.getElementById("q-feedback").textContent = "Time's up — correct answer highlighted.";
+  }
+  recordAnswerResult(false, item);
+}
+
+function recordAnswerResult(wasCorrect, item){
   if(!rowStats[item.row]) rowStats[item.row] = {correct:0, total:0};
   rowStats[item.row].total++;
-  streak = 0;
-  quizMissed.push(item);
-  document.getElementById("q-feedback").textContent = "Time's up — correct answer highlighted.";
+  if(wasCorrect){
+    score++;
+    streak++;
+    if(streak > maxStreakThisRun) maxStreakThisRun = streak;
+    rowStats[item.row].correct++;
+  } else {
+    streak = 0;
+    quizMissed.push(item);
+  }
   quizIdx++;
   updateStats();
-  document.getElementById("q-next").style.display = "inline-block";
+
+  if(wasCorrect && autoAdvance){
+    document.getElementById("q-next").style.display = "none";
+    autoAdvanceTimeout = setTimeout(loadQuestion, 550);
+  } else {
+    document.getElementById("q-next").style.display = "inline-block";
+  }
 }
 
 function selectAnswer(btn, chosen, item){
@@ -1385,37 +1522,46 @@ function selectAnswer(btn, chosen, item){
     if(b.textContent === correct) b.classList.add("correct");
   });
 
-  if(!rowStats[item.row]) rowStats[item.row] = {correct:0, total:0};
-  rowStats[item.row].total++;
-
-  let wasCorrect = false;
-  if(chosen === correct){
-    wasCorrect = true;
-    score++;
-    streak++;
-    if(streak > maxStreakThisRun) maxStreakThisRun = streak;
-    rowStats[item.row].correct++;
+  const wasCorrect = chosen === correct;
+  if(wasCorrect){
     document.getElementById("q-feedback").textContent = "Correct.";
   } else {
     btn.classList.add("wrong");
-    streak = 0;
-    quizMissed.push(item);
     document.getElementById("q-feedback").textContent = "Not quite — correct answer highlighted.";
   }
-  quizIdx++;
-  updateStats();
+  recordAnswerResult(wasCorrect, item);
+}
 
-  if(wasCorrect && autoAdvance){
-    document.getElementById("q-next").style.display = "none";
-    autoAdvanceTimeout = setTimeout(loadQuestion, 550);
-  } else {
-    document.getElementById("q-next").style.display = "inline-block";
+function submitTypedAnswer(){
+  if(answered) return;
+  const item = quizQuestions[quizIdx];
+  const input = document.getElementById("q-type-input");
+  const raw = input.value.trim().toLowerCase();
+  if(raw === ""){
+    input.focus();
+    return;
   }
+  clearTimer();
+  answered = true;
+  input.disabled = true;
+  document.getElementById("q-type-submit").disabled = true;
+
+  const correct = item.r;
+  const wasCorrect = normalizeRomaji(raw) === normalizeRomaji(correct.toLowerCase());
+  if(wasCorrect){
+    input.classList.add("correct");
+    document.getElementById("q-feedback").textContent = "Correct.";
+  } else {
+    input.classList.add("wrong");
+    document.getElementById("q-feedback").textContent = "Not quite — correct answer: " + correct;
+  }
+  recordAnswerResult(wasCorrect, item);
 }
 
 function showResults(){
   document.getElementById("q-char").style.display = "none";
   document.getElementById("q-options").style.display = "none";
+  document.getElementById("quiz-type-answer").style.display = "none";
   document.getElementById("q-feedback").style.display = "none";
   document.getElementById("q-next").style.display = "none";
   document.getElementById("quiz-results").style.display = "block";
